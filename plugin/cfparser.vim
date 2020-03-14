@@ -30,6 +30,7 @@ let g:cf_pl_scala = "20"
 let g:cf_pl_js = "34"
 
 let g:cf_pl_by_ext =    {'.cpp': g:cf_pl_gpp17,
+                        \'.cxx': g:cf_pl_gpp17,
                         \'.cc': g:cf_pl_gpp17,
                         \'.c': g:cf_pl_gcc11,
                         \'.cs': g:cf_pl_monocsharp,

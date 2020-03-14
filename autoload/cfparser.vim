@@ -143,41 +143,46 @@ endfunction
 
 "}}}
 function! cfparser#CFSubmit() "{{{
-    if empty(cfparser#CFLoggedInAs()) 
-        call cfparser#CFLogin()
-    endif
-
-    let path = expand('%:p')
-    let match = matchlist(path, s:cf_path_regexp)
-
-    if empty(match)
-        echon "\r\r"
-        echom "submit: file name not recognized"
-    else
-        let contest = match[1]
-        let problem = match[2]
-        let extension = match[3]
-
-        let language = g:cf_default_language
-        if has_key(g:cf_pl_by_ext_custom, extension)
-            let language = get(g:cf_pl_by_ext_custom, extension)
-        elseif has_key(g:cf_pl_by_ext, extension)
-            let language = get(g:cf_pl_by_ext, extension)
+    if input("submit? [y/n]: ") ==? "y"
+        if empty(cfparser#CFLoggedInAs()) 
+            call cfparser#CFLogin()
         endif
 
-        let cf_response = system(printf("curl --silent --cookie-jar %s --cookie %s '%s://%s/contest/%s/submit'", g:cf_cookies_file, g:cf_cookies_file, s:cf_proto, s:cf_host, contest))
-        let csrf_token = cfparser#CFGetToken(cf_response)
+        let path = expand('%:p')
+        let match = matchlist(path, s:cf_path_regexp)
 
-        let temp_file = expand("~/.cf_temp_file")
-        silent call cfparser#CFLog(join(getline(1,'$'), "\n"), temp_file)
-        let cf_response = system(printf("curl --location --silent --cookie-jar %s --cookie %s -F 'csrf_token=%s' -F 'action=submitSolutionFormSubmitted' -F 'submittedProblemIndex=%s' -F 'programTypeId=%s' -F \"source=@%s\" '%s://%s/contest/%s/submit?csrf_token=%s'", g:cf_cookies_file, g:cf_cookies_file, csrf_token, problem, language, temp_file, s:cf_proto, s:cf_host, contest, csrf_token))
-        call delete(temp_file)
-        echon "\r\r"
-		if empty(cf_response)
-			echom "submit: failed"
-		else
-			echom printf("submit: ok [by %s to %s/%s]", cfparser#CFLoggedInAs(), contest, problem)
+        if empty(match)
+            echon "\r\r"
+            echom "submit: file name not recognized"
+        else
+            let contest = match[1]
+            let problem = match[2]
+            let extension = match[3]
+
+            let language = g:cf_default_language
+            if has_key(g:cf_pl_by_ext_custom, extension)
+                let language = get(g:cf_pl_by_ext_custom, extension)
+            elseif has_key(g:cf_pl_by_ext, extension)
+                let language = get(g:cf_pl_by_ext, extension)
+            endif
+
+            let cf_response = system(printf("curl --silent --cookie-jar %s --cookie %s '%s://%s/contest/%s/submit'", g:cf_cookies_file, g:cf_cookies_file, s:cf_proto, s:cf_host, contest))
+            let csrf_token = cfparser#CFGetToken(cf_response)
+
+            let temp_file = expand("~/.cf_temp_file")
+            silent call cfparser#CFLog(join(getline(1,'$'), "\n"), temp_file)
+            let cf_response = system(printf("curl --location --silent --cookie-jar %s --cookie %s -F 'csrf_token=%s' -F 'action=submitSolutionFormSubmitted' -F 'submittedProblemIndex=%s' -F 'programTypeId=%s' -F \"source=@%s\" '%s://%s/contest/%s/submit?csrf_token=%s'", g:cf_cookies_file, g:cf_cookies_file, csrf_token, problem, language, temp_file, s:cf_proto, s:cf_host, contest, csrf_token))
+            call delete(temp_file)
+            echon "\r\r"
+            if empty(cf_response)
+                echom "submit: failed"
+            else
+                echom printf("submit: ok [by %s to %s/%s]", cfparser#CFLoggedInAs(), contest, problem)
+            endif
         endif
+    else 
+        echon "\r\r"
+        echom "submit: cancelled"
     endif
 endfunction
 
@@ -208,7 +213,9 @@ function! cfparser#CFTestAll() "{{{
                         \cnt=0;
                         \for i in `ls %s/*.in | sed 's/\\.in$//'`; do
                         \   let cnt++;
-                        \   echo \"\nTEST $cnt\";
+                        \   echo \"\nINPUT $cnt\";
+                        \   cat $i.in;
+                        \   echo \"\nOUTPUT $cnt\";
                         \   /tmp/cfparser_exec < $i.in | diff -y - $i.out;
                         \done;
                         \rm /tmp/cfparser_exec",
@@ -252,11 +259,23 @@ function! cfparser#CFProblemStatement() "{{{
         let cf_response = substitute(cf_response, '&amp;', '&', "g")
         let cf_response = substitute(cf_response, '&apos;', "'", "g")
         let cf_response = substitute(cf_response, '&quot;', '"', "g")
+        " latex
+        let cf_response = substitute(cf_response, '\\le', '<=', "g")
+        let cf_response = substitute(cf_response, '\\ge', '>=', "g")
+        let cf_response = substitute(cf_response, '\\lt', '<', "g")
+        let cf_response = substitute(cf_response, '\\gt', '>', "g")
+        let cf_response = substitute(cf_response, '\\ne', '!=', "g")
+        let cf_response = substitute(cf_response, '\\eq', '==', "g")
+        let cf_response = substitute(cf_response, '\$\$\$', '', "g")
         
         vnew
+        setlocal wrap nonumber nolist
+        map <buffer> q :q!<cr>
         put=cf_response
-        let name = contest . problem . "statement"
+        let name = contest . problem . "-statement"
         execute 'file ' name
+        setlocal nomodifiable readonly nowrite
+        normal gg
     endif
 endfunction
 
