@@ -105,13 +105,11 @@ endfunction
 function! cfparser#CFLogin() "{{{
     let s:cf_uname = input('username: ')
     let s:cf_passwd = inputsecret('password: ')
-    let remember = input('remember? [Y/n] ')
-    if remember ==? "Y"
+    if input('remember? [y/n]: ') ==? "y"
         let s:cf_remember = 1
     else
         let s:cf_remember = 0
     endif
-
     let cf_response = system(printf("curl --silent --cookie-jar %s '%s://%s/enter'", g:cf_cookies_file, s:cf_proto, s:cf_host))
     let csrf_token = cfparser#CFGetToken(cf_response)
     let cf_response = system(printf("curl --location --silent --cookie-jar %s --cookie %s --data 'action=enter&handleOrEmail=%s&remember=%s&csrf_token=%s' --data-urlencode 'password=%s' '%s://%s/enter'", g:cf_cookies_file, g:cf_cookies_file, s:cf_uname, s:cf_remember, csrf_token, s:cf_passwd, s:cf_proto, s:cf_host))
@@ -274,7 +272,7 @@ function! cfparser#CFProblemStatement() "{{{
         put=cf_response
         let name = contest . problem . "-statement"
         execute 'file ' name
-        setlocal nomodifiable readonly nowrite
+        setlocal nomodifiable readonly
         normal gg
     endif
 endfunction
