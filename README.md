@@ -6,7 +6,7 @@ A [codeforces](http://codeforces.com) helper plugin for vim, ported from emacs p
 - Install `cfparser.vim` with your favorite vim plugin manager. If you use [`vim-plug`](https://github.com/junegunn/vim-plug):
 
 ```
-Plug 'lyova-potyomkin/cfparser.vim'
+Plug 'ly0va/cfparser.vim'
 ```
 
 ### Optional setup
